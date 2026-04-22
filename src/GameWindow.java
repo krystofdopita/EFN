@@ -6,8 +6,7 @@ import java.awt.event.KeyListener;
 public class GameWindow extends JFrame {
 
     public GameWindow() {
-        setTitle("Hra - místnost");
-        setSize(800, 900);
+        setTitle("Hra");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setLocationRelativeTo(null);
@@ -18,27 +17,63 @@ public class GameWindow extends JFrame {
         setVisible(true);
         panel.start();
     }
+    //budovy
+    class Building {
+        Rectangle body;
+        Rectangle door;
 
-    // ----------------- HERNÍ PANEL -----------------
+        public Building(int x, int y, int w, int h, int dx, int dy, int dw, int dh) {
+            body = new Rectangle(x, y, w, h);
+            door = new Rectangle(dx, dy, dw, dh);
+        }
+    }
+
+
     class GamePanel extends JPanel implements KeyListener {
 
         int x = 100, y = 100;
-        int speed = 4;
+        int speed = 20;
+
+        int cameraX, cameraY;
+
+        final int WORLD_W = 5000;
+        final int WORLD_H = 5000;
 
         boolean up, down, left, right;
-
         boolean hasKey = false;
 
-        // místnost (zdi)
-        Rectangle walls[] = {
-                new Rectangle(0, 0, 800, 20),     // nahoře
-                new Rectangle(0, 0, 20, 600),     // vlevo
-                new Rectangle(0, 590, 800, 20),    // dole
-                new Rectangle(780, 0, 20, 600)    // vpravo
-        };
+        Building[] walls = {
+                // velka vila
+                new Building(
+                        2000, 500,
+                        1000, 800,
+                        2400, 1300,
+                        80, 10
+                ),
 
-        // dveře (výstup)
-        Rectangle door = new Rectangle(760, 250, 40, 100);
+                // masazni chatka
+                new Building(
+                        2400, 2400,
+                        600, 500,
+                        2650, 2900,
+                        80, 10
+                ),
+
+                // mala vila
+                new Building(
+                        3200, 4100,
+                        800, 600,
+                        4000, 4350,   // pravý okraj budovy
+                        10, 80
+                ),
+
+                // kumbal
+                new Building(
+                        400, 2500,
+                        450, 350,
+                        400-10, 2650,
+                        10, 80
+                )};
 
         public GamePanel() {
             setFocusable(true);
@@ -52,8 +87,8 @@ public class GameWindow extends JFrame {
                     repaint();
 
                     try {
-                        Thread.sleep(16); // ~60 FPS
-                    } catch (Exception e) {}
+                        Thread.sleep(16);
+                    } catch (Exception ignored) {}
                 }
             });
             t.start();
@@ -69,64 +104,100 @@ public class GameWindow extends JFrame {
             if (left) newX -= speed;
             if (right) newX += speed;
 
+            // hranice sveta
+            newX = Math.max(0, Math.min(newX, WORLD_W - 30));
+            newY = Math.max(0, Math.min(newY, WORLD_H - 30));
+
             Rectangle player = new Rectangle(newX, newY, 30, 30);
 
-            // kolize se zdmi
-            for (Rectangle w : walls) {
-                if (player.intersects(w)) {
-                    return; // nepovol pohyb
+            for (Building b : walls) {
+
+                if (player.intersects(b.body)) {
+                    return;
+                }
+
+                if (player.intersects(b.door)) {
+                    if (!hasKey) {
+                        x -= 10;
+                    } else {
+                        System.out.println("Opustil jsi budovu");
+                    }
                 }
             }
 
             x = newX;
             y = newY;
 
-            // klíč (pro demo ho vezmeme automaticky na místě)
+            // klic
             if (x > 300 && x < 330 && y > 300 && y < 330) {
                 hasKey = true;
             }
 
-            // dveře
-            if (player.intersects(door)) {
-                if (hasKey) {
-                    System.out.println("Opustil jsi místnost");
-                    // tady později přepneš mapu
-                } else {
-                    x -= 10; // blokace
-                }
-            }
+            // kamera
+            cameraX = x - getWidth() / 2 + 15;
+            cameraY = y - getHeight() / 2 + 15;
+
+            cameraX = Math.max(0, Math.min(cameraX, WORLD_W - getWidth()));
+            cameraY = Math.max(0, Math.min(cameraY, WORLD_H - getHeight()));
         }
 
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
 
-            // pozadí
-            g.setColor(new Color(40, 40, 40));
-            g.fillRect(0, 0, getWidth(), getHeight());
+            Graphics2D g2 = (Graphics2D) g;
 
-            // zdi
-            g.setColor(Color.GRAY);
-            for (Rectangle w : walls) {
-                g.fillRect(w.x, w.y, w.width, w.height);
+            g2.translate(-cameraX, -cameraY);
+
+            // OSTROV
+
+            g.setColor(new Color(40, 100, 40));
+            g.fillRect(0, 0, WORLD_W, WORLD_H);
+
+            // voda
+            g.setColor(new Color(0, 164, 207));
+            g.fillRect(0, 0, 50, WORLD_H);
+            g.fillRect(0, 0, WORLD_W, 50);
+            g.fillRect(WORLD_W - 50, 0, 50, WORLD_H);
+            g.fillRect(0, WORLD_H - 50, WORLD_W, 50);
+
+            // pisek 1
+            g.setColor(new Color(255, 209, 117));
+            g.fillRect(50, 50, 100, WORLD_H - 100);
+            g.fillRect(50, 50, WORLD_W - 100, 100);
+            g.fillRect(250, 250, 250, 5);
+            g.fillRect(WORLD_W - 150, 50, 100, WORLD_H - 100);
+            g.fillRect(50, WORLD_H - 150, WORLD_W - 100, 100);
+
+            // pisek 2
+            g.setColor(new Color(177, 121, 0));
+            g.fillRect(150, 150, 150, WORLD_H - 300);
+            g.fillRect(150, 150, WORLD_W - 300, 150);
+            g.fillRect(WORLD_W - 300, 150, 150, WORLD_H - 300);
+            g.fillRect(150, WORLD_H - 300, WORLD_W - 300, 150);
+
+            // budovy
+            for (Building b : walls) {
+
+                g.setColor(Color.GRAY);
+                g.fillRect(b.body.x, b.body.y, b.body.width, b.body.height);
+
+                g.setColor(hasKey ? Color.GREEN : Color.RED);
+                g.fillRect(b.door.x, b.door.y, b.door.width, b.door.height);
             }
 
-            // dveře
-            g.setColor(hasKey ? Color.GREEN : Color.RED);
-            g.fillRect(door.x, door.y, door.width, door.height);
-
-            // klíč (vizuálně)
+            // klic
             if (!hasKey) {
                 g.setColor(Color.YELLOW);
                 g.fillOval(310, 310, 10, 10);
             }
 
-            // hráč
+            // hrac
             g.setColor(Color.CYAN);
             g.fillRect(x, y, 30, 30);
         }
 
-        // -------- klávesy --------
+        // input pohyb
         public void keyPressed(KeyEvent e) {
             switch (e.getKeyCode()) {
                 case KeyEvent.VK_W -> up = true;

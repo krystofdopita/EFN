@@ -11,7 +11,7 @@ public class MainMenu extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        // hlavní panel s tmavým pozadím
+
         JPanel panel = new JPanel();
         panel.setBackground(new Color(30, 30, 30));
         panel.setLayout(new BorderLayout());
@@ -23,7 +23,7 @@ public class MainMenu extends JFrame {
         title.setBorder(BorderFactory.createEmptyBorder(40, 0, 20, 0));
         panel.add(title, BorderLayout.NORTH);
 
-        // panel na tlačítka (vycentrovaný)
+        // panel na tlacitka
         JPanel centerPanel = new JPanel();
         centerPanel.setBackground(new Color(30, 30, 30));
         centerPanel.setLayout(new GridBagLayout());
@@ -44,7 +44,7 @@ public class MainMenu extends JFrame {
         centerPanel.add(buttonsPanel);
         panel.add(centerPanel, BorderLayout.CENTER);
 
-        // akce
+        //tlacitka
         startButton.addActionListener(e -> {
             new GameWindow();
         });
@@ -65,7 +65,7 @@ public class MainMenu extends JFrame {
         button.setPreferredSize(new Dimension(200, 50));
         button.setBorder(BorderFactory.createEmptyBorder());
 
-        // hover efekt
+        // hover efekt(zmena barvy po najeti s mysi)
         button.addMouseListener(new MouseAdapter() {
             public void mouseEntered(MouseEvent e) {
                 button.setBackground(new Color(100, 160, 210));
@@ -79,7 +79,7 @@ public class MainMenu extends JFrame {
         return button;
     }
 
-    public static void main(String[] args) {
+    public static void main() {
         SwingUtilities.invokeLater(() -> {
             new MainMenu().setVisible(true);
         });
@@ -95,10 +95,10 @@ public class MainMenu extends JFrame {
         button.setOpaque(true);
         button.setBorder(BorderFactory.createEmptyBorder(15, 30, 15, 30));
 
-        // zruší defaultní ošklivý okraj
+        // zruseni hnusnyho defaultniho okraje
         button.setBorderPainted(false);
 
-        // kurzor ruka
+        // kurzor ruky po najeti na tlacitko
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         // hover efekt
