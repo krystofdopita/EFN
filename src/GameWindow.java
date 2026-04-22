@@ -20,17 +20,20 @@ public class GameWindow extends JFrame {
     }
 
     class GamePanel extends JPanel implements KeyListener {
-
-        int x = 710, y = 350;
+        //spawn
+        Player player = new Player(710, 350);
+        //rychlost hrace
         int speed = 20;
 
+
+        boolean inventoryOpen = false;
         int cameraX, cameraY;
 
         final int WORLD_W = 5000;
         final int WORLD_H = 5000;
 
         boolean up, down, left, right;
-        boolean hasKey = false;
+        boolean[] keys = new boolean[10];
         Bush[] bushes = {
                 // 67 kvadrant
                 new Bush(1500, 100, 90), new Bush(3200, 200, 300), new Bush(4200, 600, 150), new Bush(4500, 1200, 400),
@@ -54,19 +57,21 @@ public class GameWindow extends JFrame {
 
         Building[] walls = {
                 // velka vila
-                new Building(2000, 500, 1000, 800, 2400, 1300, 80, 10),
+                new Building(2000, 500, 1000, 800, 2400, 1300, 80, 10,0),
                 // masazni chatka
-                new Building(2400, 2400, 600, 500, 2650, 2900, 80, 10),
+                new Building(2400, 2400, 500, 500, 2625, 2900, 80, 10,1),
                 // mala vila
-                new Building(3200, 4100, 800, 600, 4000, 4350, 10, 80),
+                new Building(3200, 4100, 800, 600, 4000, 4350, 10, 80,2),
                 // kumbal
-                new Building(400, 2500, 450, 350, 400-10, 2650, 10, 80),
-                new Building(600, 0, 250, 300, 600 + 250/2 - 80/2, 300, 80, 10)};
+                new Building(400, 2500, 450, 350, 400-10, 2650, 10, 80,3),
+                //pristav
+                new Building(600, 0, 250, 300, 600 + 250/2 - 80/2, 300, 80, 10,4)};
 
 
         public GamePanel() {
             setFocusable(true);
             addKeyListener(this);
+
         }
 
         public void start() {
@@ -81,12 +86,15 @@ public class GameWindow extends JFrame {
                 }
             });
             t.start();
+            keys[3] = true;
+            player.inventory.add("67");
+
         }
 
         void update() {
 
-            int newX = x;
-            int newY = y;
+            int newX = player.x;
+            int newY = player.y;
 
             if (up) newY -= speed;
             if (down) newY += speed;
@@ -97,11 +105,12 @@ public class GameWindow extends JFrame {
             newX = Math.max(0, Math.min(newX, WORLD_W - 30));
             newY = Math.max(0, Math.min(newY, WORLD_H - 30));
 
-            Rectangle player = new Rectangle(newX, newY, 30, 30);
+            Rectangle p = player.getBounds(newX, newY);
+            if (inventoryOpen) return;
 
             // vytlaceni z vody
             for (Rectangle w : water) {
-                if (player.intersects(w)) {
+                if (p.intersects(w)) {
 
                     // tlaci hrace na predchozi pozici
                     if (up) newY += speed;
@@ -110,15 +119,15 @@ public class GameWindow extends JFrame {
                     if (right) newX -= speed;
 
 
-                    newX = x;
-                    newY = y;
+                    newX = player.x;
+                    newY = player.y;
                 }
             }
 
             //schovani v keri zabarveni
             inBush = false;
             for (Bush b : bushes) {
-                if (b.intersects(player)) {
+                if (b.intersects(p)) {
                     inBush = true;
                     break;
                 }
@@ -126,30 +135,24 @@ public class GameWindow extends JFrame {
 
             for (Building b : walls) {
 
-                if (player.intersects(b.body)) {
+                if (p.intersects(b.body)) {
                     return;
                 }
 
-                if (player.intersects(b.door)) {
-                    if (!hasKey) {
-                        x -= 10;
-                    } else {
-                        System.out.println("Opustil jsi budovu");
+                if (p.intersects(b.door)) {
+                    if (!keys[b.keyId]) {
+                        p.x -= 10;
                     }
                 }
             }
 
-            x = newX;
-            y = newY;
+            player.move(newX, newY);
 
-            // klic
-            if (x > 300 && x < 330 && y > 300 && y < 330) {
-                hasKey = true;
-            }
+
 
             // kamera
-            cameraX = x - getWidth() / 2 + 15;
-            cameraY = y - getHeight() / 2 + 15;
+            cameraX = player.x - getWidth() / 2 + 15;
+            cameraY = player.y - getHeight() / 2 + 15;
 
             cameraX = Math.max(0, Math.min(cameraX, WORLD_W - getWidth()));
             cameraY = Math.max(0, Math.min(cameraY, WORLD_H - getHeight()));
@@ -167,6 +170,7 @@ public class GameWindow extends JFrame {
 
             g.setColor(new Color(40, 100, 40));
             g.fillRect(0, 0, WORLD_W, WORLD_H);
+
 
             // voda
             g.setColor(new Color(0, 164, 207));
@@ -192,13 +196,15 @@ public class GameWindow extends JFrame {
 
 
 
-            // budovy
+            // zbarveni dveri pri zamknuti a odemceni
             for (Building b : walls) {
 
                 g.setColor(Color.GRAY);
                 g.fillRect(b.body.x, b.body.y, b.body.width, b.body.height);
 
-                g.setColor(hasKey ? Color.GREEN : Color.RED);
+                boolean unlocked = keys[b.keyId];
+
+                g.setColor(unlocked ? Color.GREEN : Color.RED);
                 g.fillRect(b.door.x, b.door.y, b.door.width, b.door.height);
             }
 
@@ -209,6 +215,25 @@ public class GameWindow extends JFrame {
             g.fillRect(200*3,0,5*3,300);
             g.fillRect(600+250-15,0,15,300);
 
+            //vybarveni masazni chatky
+            g.setColor(new Color(0, 126, 152));
+            g.fillRect(2400,2400,50,500);
+            g.fillRect(2500,2400,50,500);
+            g.fillRect(2600,2400,50,500);
+            g.fillRect(2700,2400,50,500);
+            g.fillRect(2800,2400,50,500);
+            g.fillRect(2900,2400,50,500);
+            g.setColor(new Color(207, 207, 207));
+            g.fillRect(2450,2400,50,500);
+            g.fillRect(2550,2400,50,500);
+            g.fillRect(2650,2400,50,500);
+            g.fillRect(2750,2400,50,500);
+            g.fillRect(2850,2400,50,500);
+
+            //zlaty kruh
+            g.setColor(Color.ORANGE);
+            g.fillOval(2400+250/4+15, 2400+250/4-10, 400, 400);
+
 
             // kere
             g.setColor(new Color(0, 120, 0));
@@ -217,10 +242,7 @@ public class GameWindow extends JFrame {
             }
 
             // klic
-            if (!hasKey) {
-                g.setColor(Color.YELLOW);
-                g.fillOval(310, 310, 10, 10);
-            }
+
 
             // hrac
             if (inBush) {
@@ -230,7 +252,20 @@ public class GameWindow extends JFrame {
                 g.setColor(Color.CYAN);
             }
 
-            g.fillRect(x, y, 30, 30);
+            g.fillRect(player.x, player.y, 30, 30);
+            if (inventoryOpen) {
+                g.setColor(new Color(0, 0, 0, 180));
+                g.fillRect(cameraX + 100, cameraY + 100, 300, 400);
+
+                g.setColor(Color.WHITE);
+                g.drawString("INVENTÁŘ:", cameraX + 120, cameraY + 130);
+
+                int i = 0;
+                for (String item : player.inventory) {
+                    g.drawString("- " + item, cameraX + 120, cameraY + 160 + (i * 20));
+                    i++;
+                }
+            }
         }
 
         // input pohyb
@@ -240,6 +275,7 @@ public class GameWindow extends JFrame {
                 case KeyEvent.VK_S -> down = true;
                 case KeyEvent.VK_A -> left = true;
                 case KeyEvent.VK_D -> right = true;
+                case KeyEvent.VK_I -> inventoryOpen = !inventoryOpen;
             }
         }
 
