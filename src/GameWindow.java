@@ -18,21 +18,10 @@ public class GameWindow extends JFrame {
         setVisible(true);
         panel.start();
     }
-    //budovy
-    class Building {
-        Rectangle body;
-        Rectangle door;
-
-        public Building(int x, int y, int w, int h, int dx, int dy, int dw, int dh) {
-            body = new Rectangle(x, y, w, h);
-            door = new Rectangle(dx, dy, dw, dh);
-        }
-    }
-
 
     class GamePanel extends JPanel implements KeyListener {
 
-        int x = 100, y = 100;
+        int x = 710, y = 350;
         int speed = 20;
 
         int cameraX, cameraY;
