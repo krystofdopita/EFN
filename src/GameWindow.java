@@ -4,8 +4,9 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
 public class GameWindow extends JFrame {
-
+    boolean inBush = false;
     public GameWindow() {
+
         setTitle("Hra");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
@@ -41,39 +42,38 @@ public class GameWindow extends JFrame {
 
         boolean up, down, left, right;
         boolean hasKey = false;
+        Bush[] bushes = {
+                // 67 kvadrant
+                new Bush(1500, 100, 90), new Bush(3200, 200, 300), new Bush(4200, 600, 150), new Bush(4500, 1200, 400),
+
+                // ii kvadrant
+                new Bush(200, 200, 80), new Bush(700, 600, 120), new Bush(900, 1200, 200), new Bush(1000, 1300, 100),
+
+                // iii kvadrant
+                new Bush(600, 3500, 280), new Bush(1200, 3200, 90), new Bush(1800, 3000, 350), new Bush(1500, 4300, 500), new Bush(1700, 4100, 180),
+
+                // iv kvadrant
+                new Bush(1800, 1800, 70), new Bush(3200, 1800, 250), new Bush(3000, 3500, 160), new Bush(3600, 3000, 450), new Bush(4400, 2500, 110), new Bush(4200, 4200, 220), new Bush(4700, 3600, 130)
+        };
+
+        Rectangle[] water = {
+                new Rectangle(0, 0, 50, WORLD_H),
+                new Rectangle(0, 0, WORLD_W, 50),
+                new Rectangle(WORLD_W - 50, 0, 50, WORLD_H),
+                new Rectangle(0, WORLD_H - 50, WORLD_W, 50)
+        };
 
         Building[] walls = {
                 // velka vila
-                new Building(
-                        2000, 500,
-                        1000, 800,
-                        2400, 1300,
-                        80, 10
-                ),
-
+                new Building(2000, 500, 1000, 800, 2400, 1300, 80, 10),
                 // masazni chatka
-                new Building(
-                        2400, 2400,
-                        600, 500,
-                        2650, 2900,
-                        80, 10
-                ),
-
+                new Building(2400, 2400, 600, 500, 2650, 2900, 80, 10),
                 // mala vila
-                new Building(
-                        3200, 4100,
-                        800, 600,
-                        4000, 4350,   // pravý okraj budovy
-                        10, 80
-                ),
-
+                new Building(3200, 4100, 800, 600, 4000, 4350, 10, 80),
                 // kumbal
-                new Building(
-                        400, 2500,
-                        450, 350,
-                        400-10, 2650,
-                        10, 80
-                )};
+                new Building(400, 2500, 450, 350, 400-10, 2650, 10, 80),
+                new Building(600, 0, 250, 300, 600 + 250/2 - 80/2, 300, 80, 10)};
+
 
         public GamePanel() {
             setFocusable(true);
@@ -109,6 +109,31 @@ public class GameWindow extends JFrame {
             newY = Math.max(0, Math.min(newY, WORLD_H - 30));
 
             Rectangle player = new Rectangle(newX, newY, 30, 30);
+
+            // vytlaceni z vody
+            for (Rectangle w : water) {
+                if (player.intersects(w)) {
+
+                    // tlaci hrace na predchozi pozici
+                    if (up) newY += speed;
+                    if (down) newY -= speed;
+                    if (left) newX += speed;
+                    if (right) newX -= speed;
+
+
+                    newX = x;
+                    newY = y;
+                }
+            }
+
+            //schovani v keri zabarveni
+            inBush = false;
+            for (Bush b : bushes) {
+                if (b.intersects(player)) {
+                    inBush = true;
+                    break;
+                }
+            }
 
             for (Building b : walls) {
 
@@ -170,11 +195,13 @@ public class GameWindow extends JFrame {
             g.fillRect(50, WORLD_H - 150, WORLD_W - 100, 100);
 
             // pisek 2
-            g.setColor(new Color(177, 121, 0));
+            g.setColor(new Color(145, 158, 0));
             g.fillRect(150, 150, 150, WORLD_H - 300);
             g.fillRect(150, 150, WORLD_W - 300, 150);
             g.fillRect(WORLD_W - 300, 150, 150, WORLD_H - 300);
             g.fillRect(150, WORLD_H - 300, WORLD_W - 300, 150);
+
+
 
             // budovy
             for (Building b : walls) {
@@ -186,6 +213,20 @@ public class GameWindow extends JFrame {
                 g.fillRect(b.door.x, b.door.y, b.door.width, b.door.height);
             }
 
+            //pristav
+            g.setColor(new Color(124, 81, 0));
+            g.fillRect(200*3,0,250,300);
+            g.setColor(new Color(80, 68, 0));
+            g.fillRect(200*3,0,5*3,300);
+            g.fillRect(600+250-15,0,15,300);
+
+
+            // kere
+            g.setColor(new Color(0, 120, 0));
+            for (Bush b : bushes) {
+                g2.fill(b.bush);
+            }
+
             // klic
             if (!hasKey) {
                 g.setColor(Color.YELLOW);
@@ -193,7 +234,13 @@ public class GameWindow extends JFrame {
             }
 
             // hrac
-            g.setColor(Color.CYAN);
+            if (inBush) {
+                // schovany hrac
+                g.setColor(new Color(0, 72, 255));
+            } else {
+                g.setColor(Color.CYAN);
+            }
+
             g.fillRect(x, y, 30, 30);
         }
 
